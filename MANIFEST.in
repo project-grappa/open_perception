@@ -1,0 +1,15 @@
+# MANIFEST.in
+
+# Include all YAML files in the config directory
+recursive-include config *.yaml
+
+# Include any model files in subdirectories (if you want them in the package - often large model files are not included!)
+# Example:
+# recursive-include src/open_perception/models *.pt
+
+# Include docs (if desired)
+recursive-include docs *
+
+# Include license & readme
+include LICENSE
+include README.md

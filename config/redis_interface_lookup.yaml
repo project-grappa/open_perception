@@ -1,0 +1,27 @@
+# redis_interface.yaml
+# =============================================================================
+# Overrides to the Default configuration for the open_perception (default.yaml)
+# =============================================================================
+
+pipeline:
+  input:
+    # For a live camera, set source to "gui"
+    source:  "redis" 
+  perception:
+    models:
+      detection:
+        - name: "lookup" # Lookup model to perform similarity search among list of available objects
+          enabled: true
+          text_embedding_model: "clip-ViT-B-32" # any model supported by sentence_transformers "paraphrase-MiniLM-L6-v2"
+          image_embedding_model: "clip-ViT-B-32"
+          similarity_threshold: 0.35 # min similarity score to consider the object as a match
+          weight_image_similarity: 0.5
+          weight_text_similarity: 0.5
+
+communication:
+  redis:
+    enabled: true
+  gui:
+    enabled: true
+    camera_source: "redis"
+    

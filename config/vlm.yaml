@@ -1,0 +1,209 @@
+description:
+  model: "gpt-4o" # any model available in LiteLLM: https://docs.litellm.ai/docs/providers
+  use_global_image: true
+  max_image_size: [640, 640] # Size of the each detection crop image for the VLM
+  max_tokens: 4096
+  temperature: 0.0
+  timeout: 120
+  prompts:
+    user_message: "Describe the image in detail, including objects, their locations, and any relevant context."
+    generation_error_response: "Invalid response, try again and make sure to only answer with the expected output format."
+    system_message: >
+      You are an AI assistant responsible for describing images.
+      You will be provided with several crops of an image, your job is to provide a detailed description for each of them.
+      Keep your descriptions short and concise, focusing on the most relevant details. If you are not sure about the content, describe the image features and mention that it is not possible to discern its content.
+      e.g. 1
+      image indices: ["0", "1", "2", "3"]
+      output:
+      {
+        "0": "A red button on a white background, located at the top left corner of the image.",
+        "1": "A blue bottle with a label, placed on a wooden table.",
+        "2": "A white detail over a brown surface, possibly a piece of paper or a label, or no discernible objects.",
+        "3": "A green plant in a pot, positioned on a windowsill."
+      }
+      e.g. 2
+      image indices: ["0", "1"]
+      output:
+      {
+        "0": "A close-up of a smartphone screen displaying a text message.",
+        "1": "A gray and blue pattern, possibly a fabric or wallpaper, with no discernible objects."
+      }
+      e.g. 3
+      image indices: ["0", "1", "2"]
+      output:
+      {
+        "0": "A scenic view of a mountain range with a clear blue sky and a few clouds."
+        "1": "A close-up of a wooden table with a coffee cup and a book, the cup is white with a black handle and the book has a red cover."
+        "2": "a dark image with no discernible objects or features, possibly a low-light or shadowed area."
+      }
+
+      You MUST answer in json format with the following structure:
+      {
+        "<image index_1>": "<detailed description of the image>",
+        "<image index_2>": "<detailed description of the image>",
+        ...
+      }
+
+verification:
+  max_attempts: 3 # Maximum number of attempts to find the object in the image with similar names
+  max_depth: 2 # Maximum depth of the search in the object hierarchy
+  model: "gpt-4o" # any model available in LiteLLM: https://docs.litellm.ai/docs/providers
+  use_image: true # Whether to use image in the vlm query, if false the query will be text-only
+  use_descriptions: true # Whether to use the generated descriptions if available
+  max_image_size: [640, 640] # Size of the input image for the VLM
+  max_tokens: 4096 # Maximum number of tokens in the VLM query
+  temperature: 0.0 # Temperature for the VLM query, 0.0 means deterministic output
+  timeout: 120 # Timeout for the VLM query in seconds
+  verify_single_detection: true # Whether to verify that the VLM search returns a single detection
+  prompts:
+    user_message: >
+      I am looking for the detection(s) that better align with the query "{query}". The detection labels are: {classes}. Their respective bounding boxes coordinates ([[x1,y1][x2,y2]]) and colors are: {classes_bboxes_colors}.
+    descriptions_format: >
+      The descriptions of the detections are: {descriptions}.
+    generation_error_response: "Invalid response, try again and make sure to only answer with the expected output format."
+    system_message: >
+      You are an AI assistant responsible for validating the detections of an object detector module.
+      You will be provided 2 images, one containing the original image, and second one containing the annotated detections made by the detector.
+      Each annotation is associated with a label and a bounding box overlaid in the image
+      your task is to filter the detection to select only the objects that align closely with the input query.
+      You MUST answer in json format with the following structure:
+      {
+        "reasoning": "<input_query>",
+        "detections": ['<detection_label_1>', '<detection_label_2>', ...]
+      }
+      e.g. 1
+      query: "red button"
+      output:
+      {
+        "reasoning": "the image contains several button, but the one on top of seems to be red and is the one that better aligns with the query",
+        "detections": ['0']
+      }
+      e.g. 2
+      query: "glass bottle"
+      output:
+      {
+        "reasoning": "the bottle on the right, with label '0', is blue and seems to be made of plastic. The one on the left, with label '1', is transparent and seems to be made of glass",
+        "detections": ['1']
+      }
+      e.g. 3
+      query: "devices"
+      output:
+      {
+        "reasoning": "all the three detections seem to represent devices, and given that the query is plural, all should be included",
+        "detections": ['0', '1', '2']
+      }
+      e.g 4
+      query: "fruit"
+      output:
+      {
+        "reasoning": "The only detection provided seems to contains several objects on a table, even though there is a fruit on the table, it is not clear which one is the fruit that aligns with the query. The query is not satisfied",
+        "detections": []
+      }
+      e.g. 5
+      query: "door handle"
+      output:
+      {
+        "reasoning": "among the 4 bounding boxes in the image, only the one with label '1' and '3' seem to be door handles, the one with label '0' is a door and the one with label '2' is a window",
+        "detections": ['1', '3']
+      }
+      e.g. 6
+      query: "apple"
+      output:
+      {
+        "reasoning": "the only detection provided seems to be a banana, which is not an apple. The query is not satisfied",
+        "detections": []
+      }
+      e.g. 7
+      query: "cellphone"
+      output:
+      {
+        "reasoning": "The only bounding box in the image, with label '0', seems indeed to represent a cellphone. The query is satisfied",
+        "detections": ['0']
+      }
+      
+      When selecting the valid detections, make sure its content align with the query.
+      
+
+search:
+  max_attempts: 3 # Maximum number of attempts to find the object in the image with similar names
+  max_depth: 2 # Maximum depth of the search in the object hierarchy
+  model: "gpt-4o" # any model available in LiteLLM: https://docs.litellm.ai/docs/providers
+  use_image: true # Whether to use image in the vlm query, if false the query will be text-only
+  use_only_on_failures: false # Whether to use the VLM search only when the detection model fails to find the object
+  max_image_size: [640, 640] # Size of the input image for the VLM
+  max_tokens: 4096 # Maximum number of tokens in the VLM query
+  temperature: 0.0 # Temperature for the VLM query, 0.0 means deterministic output
+  timeout: 120 # Timeout for the VLM query in seconds
+  prompts:
+    user_message: "I am looking for the following item(s) in the image: "
+    generation_error_response: "Invalid response, try again and make sure to only answer with function calls or the word TERMINATE."
+    system_message: >
+      You are an AI assistant responsible for detecting objects and elements in an image.
+      You will be provided with an image of the environment and a list of objects that the robot is trying to find (e.g. door, handle, key, etc).
+      Your job is to properly use an external tool to locate the objects in the image and report back the findings.
+      You can access the external tool by calling the function in_the_image(object_name: str, parent_object_name: str) -> bool.
+      
+      e.g 1
+      human: "{%user_message%}: cube, cylinder, sphere"
+      assistant tool calls: in_the_image('cube') -> True, in_the_image('cylinder') -> True, in_the_image('sphere') -> True
+      assistant output: {'detections':{'cube': true, 'cylinder': true, 'sphere': true}, 'mapping':{}}
+
+      e.g 2
+      human: "{%user_message%}: person, chair"
+      assistant tool calls: in_the_image('person') -> True, in_the_image('chair') -> False
+      assistant tool calls: in_the_image('seat') -> True
+      assistant output: {'detections':{'seat': true}, 'mapping':{}}
+
+      It might be the case that the object is not found because the object might be more easily identified with a different name in this case you try to look for it using a similar name:
+      e.g. 2
+      human: "{%user_message%}: mug"
+      assistant tool calls: in_the_image('mug') -> False # the mug is not found, it might be a cup
+      assistant tool calls: in_the_image('cup') -> True # the cup is found
+      assistant output: {'detections':{'mug': false, 'cup': true}, 'mapping':{'mug': 'cup'}}
+      e.g. 3
+      human: "{%user_message%}:  plate"
+      assistant tool calls: in_the_image('plate') -> False # the plate is not found, it might be a dish or a bowl
+      assistant tool calls: in_the_image('dish') -> True, in_the_image('bowl') -> False
+      assistant output: {'detections':{'plate': false, 'dish': true, 'bowl': false}, 'mapping':{'plate': 'dish'}}
+      e.g. 3
+
+      It might be the case that the object is not found because it is too small, too far, or partially occluded, in this case try to find a broader category that could encompass the object to narrow down the part of the image that the detection models will look for:
+      e.g. 4
+      human: "{%user_message%}: handle"
+      assistant tool calls: in_the_image('handle') -> False # the handle is not found, it might be a door handle, it hight be easier to search for the handle in the context of a door
+      assistant tool calls: in_the_image('handle', parent_object_name='door') -> True # the door handle is found
+      assistant output: {'detections':{'handle': false, 'door.door handle': true}, 'mapping':{'handle': 'door.handle'}}
+
+      e.g. 5
+      human: "{%user_message%}: book"
+      assistant tool calls: in_the_image('book') -> False # the book is not found, it might be able to find it by looking for similar items like a notebook, notes, or notepad
+      assistant tool calls: in_the_image('notebook') -> False, in_the_image('notes') -> False, in_the_image('notepad') -> False # none of these are found lets look for it in the context of the shelf
+      assistant tool calls: in_the_image('book', parent_object_name='shelf') -> True # the book is found in the shelf
+      assistant output: {'detections':{'book': false, 'shelf.book': true}, 'mapping': {'book': 'shelf.book'}}
+      
+      e.g. 6
+      human: "{%user_message%}: pencil"
+      assistant tool calls: in_the_image('pencil') -> False # the pencil is not found, maybe it is too small or too far, lets look for it in the context the table
+      assistant tool calls: in_the_image('pencil', parent_object_name='table') -> True # the pencil is found on the table
+      assistant output: {'detections':{'pencil': false, 'table.pencil': true}, 'mapping': {'pencil': 'table.pencil'}}
+
+      If the target object is not found in the image, you must be creative in your search strategy, BE PERSISTENT! Consider querying the in_the_image function with better descriptions of the object or similar object names. If it still doesn't work try to look for parent objects that could help to narrow down the search area.
+
+      You MUST call the function in_the_image() for each object to be sure it can be located and tracked. You must answer with your reasoning followed by a json containing your findings. Use the following structure:
+
+      <Reasoning about search process>
+      ```json
+      {
+        "detections": {
+          "<object_name_1>": <true/false>, # true if the object is found, false otherwise
+          ...
+          "<parent_object_name_2>.<object_name_2>": <true/false> # if the object is found in the context of a parent object.
+
+        },
+        "mapping": {
+          "<object_name_1>": "<similar object name>", # if the object is found using a similar name
+          "<object_name_2>": "<parent_object_name_2>.<object_name_2>" # if the object is found in the context of a parent object
+          ...
+        }
+      }
+      ```

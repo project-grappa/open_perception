@@ -1,0 +1,173 @@
+# default.yaml
+# =============================================================================
+# Default configuration for the open_perception.
+# Adjust to your environment and specific requirements in separate files (e.g., redis_interface.yaml).
+# =============================================================================
+
+pipeline:
+  # ---------------------------------------------------------------------------
+  # Input settings for the pipeline
+  # ---------------------------------------------------------------------------
+  input:
+    # For a live camera, set source to "gui"
+    source:  "gui" #"redis" "ros" "api", etc.
+
+    # Camera settings
+    cameras:
+      - name: "default" # Name of the camera
+        fov: 90.0
+        intrinsics: [[617.3, 0, 320], [0, 617.3, 240], [0, 0, 1]]
+        extrinsics: [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0]]    # can be overwritten though communication interfaces
+  # ---------------------------------------------------------------------------
+  # Perception model settings: a list of models to load in the pipeline.
+  # Each model can have its own checkpoint path, confidence threshold, etc.
+  # ---------------------------------------------------------------------------
+  perception:
+
+    vlm: !include vlm.yaml # Visual Language Model settings
+    
+    # ---------------------------------------------------------------------------
+    models:
+      detection:
+        # - name: "dummy" # Dummy model for testing
+        #   enabled: true
+        #   multi_granular: true
+
+        # - name: "lookup" # Lookup model to perform similarity search among list of available objects
+        #   enabled: true
+        #   text_embedding_model: "clip-ViT-B-32" # any model supported by sentence_transformers "paraphrase-MiniLM-L6-v2"
+        #   image_embedding_model: "clip-ViT-B-32"
+        #   similarity_threshold: 0.35 # min similarity score to consider the object as a match
+        #   weight_image_similarity: 0.5
+        #   weight_text_similarity: 0.5
+
+        - name: "GroundingDINO"
+          enabled: true
+          multi_granular: true
+          vlm_search: true
+
+          # checkpoint: "checkpoints/dino.pt"
+          box_threshold: 0.35
+          text_threshold: 0.25
+
+        # - name: "yoloworld"
+        #   enabled: true
+        #   multi_granular: true
+        #   # checkpoint: "checkpoints/yolov8x-worldv2.pt"
+          
+      segmentation:
+        - name: "SAM2"
+          enabled: true
+          checkpoint: "sam2.1_hiera_large.pt" #"sam2.1_hiera_small.pt
+          model_cfg: "configs/sam2.1/sam2.1_hiera_l.yaml" # "configs/sam2.1/sam2.1_hiera_s.yaml"
+          confidence_threshold: 0.5
+
+    # ---------------------------------------------------------------------------
+    # 3d State estimation settings
+    # ---------------------------------------------------------------------------
+    state_estimation:
+      - name: "pca"
+        enabled: true
+        # fix_orientation_plane: "yz" #ensures the orientation of the object is in the yz plane ()
+        num_outlier_filtering: 3 # Number of steps to remove the outliers points
+
+  # ---------------------------------------------------------------------------
+  # Aggregation/Fusion settings for multiple model outputs
+  # ---------------------------------------------------------------------------
+  aggregation:
+    enabled: false
+    # Example methods: "weighted_nms", "simple_merge", etc.
+    method: "weighted_nms"
+    iou_threshold: 0.5
+    confidence_method: "average"
+
+  # ---------------------------------------------------------------------------
+  # Output settings
+  # ---------------------------------------------------------------------------
+  output:
+    # Whether to save detection/tracking results (e.g., bounding boxes) to disk
+    save_results: false
+    save_path: "results/"
+
+
+communication:
+  # ---------------------------------------------------------------------------
+  # REST API server settings
+  # ---------------------------------------------------------------------------
+  api:
+    enabled: false
+    host: "0.0.0.0"
+    port: 8000
+
+  # ---------------------------------------------------------------------------
+  # Redis settings (pub/sub)
+  # ---------------------------------------------------------------------------
+  redis:
+    enabled: true
+    host: "127.0.0.1"
+    port: 6379
+    channels:
+      cameras:
+        front:
+            rgb: "front_rgb"
+            depth: "front_depth"
+            point_cloud: "front_point_cloud"
+        # top:
+        #     rgb: "top_rgb"
+        #     depth: "top_depth"
+        #     point_cloud: "top_point_cloud"
+
+      acknowledgement: "perception_ak"
+      info: "guidance_info"
+      locate: "locate" # locate the object in the image
+      remove: "remove" # remove the object from tracking list
+      reset: "reset" # reset the perception pipeline
+      update_config: "update_config" # update the configuration of the pipeline
+      all_detections: "all_detections" # get all the detections from the pipeline
+
+  # ---------------------------------------------------------------------------
+  # ROS settings
+  # ---------------------------------------------------------------------------
+  ros:
+    enabled: false
+    node_name: "open_vocab_node"
+  
+  # ---------------------------------------------------------------------------
+  # GUI settings
+  # ---------------------------------------------------------------------------
+  gui:
+    enabled: true
+    # output_dir: "output/" # default directory to save the output images
+    camera_source: "webcam" #"webcam" , "realsense", "redis", "api", etc.
+    max_height: 800 # Maximum height of the GUI window
+    # realsense_cam_serial: '821212062747' # NOTE: Obtained from RealSense software
+    3d_viewer:
+      enabled: true
+      limits:
+        x_min: -2
+        x_max: 2
+        y_min: -2
+        y_max: 2
+        z_min: -2
+        z_max: 2
+      update_every_n_frames: 1
+      show_origin: true
+      pointcloud_resolution: 1 # show every nth point in the point cloud
+
+  
+# ---------------------------------------------------------------------------
+# Logging settings
+# ---------------------------------------------------------------------------
+logging:
+  level: "INFO"
+  handlers:
+    console:
+      level: "INFO"
+      formatter: "detailed"
+    file:
+      level: "ERROR"
+      formatter: "detailed"
+      filename: "app.log"
+  formatters:
+    detailed:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

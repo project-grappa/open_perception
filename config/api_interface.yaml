@@ -1,0 +1,22 @@
+# api_interface.yaml
+# =============================================================================
+# Default configuration for the open_perception.
+# Adjust to your environment and specific requirements.
+# =============================================================================
+
+pipeline:
+  input:
+    # For a live camera, set source to "gui"
+    source:  "api" 
+
+communication:
+  api:
+    enabled: true
+  redis:
+    enabled: false
+  ros:
+    enabled: false
+  gui:
+    enabled: false
+    camera_source: "api"
+    

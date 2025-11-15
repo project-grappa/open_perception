@@ -1,0 +1,18 @@
+# redis_interface.yaml
+# =============================================================================
+# Overrides to the Default configuration for the open_perception (default.yaml)
+# =============================================================================
+
+
+pipeline:
+  input:
+    # For a live camera, set source to "gui"
+    source:  "redis" 
+
+communication:
+  redis:
+    enabled: true
+  gui:
+    enabled: true
+    camera_source: "redis"
+    

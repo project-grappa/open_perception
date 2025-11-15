@@ -1,0 +1,155 @@
+# default.yaml
+# =============================================================================
+# Overrides to the Default configuration for the open_perception (default.yaml)
+# =============================================================================
+
+
+pipeline:
+  # ---------------------------------------------------------------------------
+  # Input settings for the pipeline
+  # ---------------------------------------------------------------------------
+  input:
+    # For a live camera, set source to "gui"
+    source:  "gui" #"redis" # "gui", "ros", etc.
+
+  # ---------------------------------------------------------------------------
+  # Perception model settings: a list of models to load in the pipeline.
+  # Each model can have its own checkpoint path, confidence threshold, etc.
+  # ---------------------------------------------------------------------------
+  perception:
+    models:
+      detection:
+        - name: "dummy" # Dummy model for testing
+          enabled: true
+          multi_granular: true
+
+        # - name: "GroundingDINO"
+        #   enabled: true
+        #   multi_granular: true
+        #   # checkpoint: "checkpoints/dino.pt"
+        #   # confidence_threshold: 0.5
+        #   box_threshold: 0.35
+        #   text_threshold: 0.25
+
+        # - name: "yoloworld"
+        #   enabled: true
+        #   multi_granular: true
+        #   # checkpoint: "checkpoints/yolov8x-worldv2.pt"
+          
+      # segmentation:
+        # - name: "SAM2"
+        #   enabled: true
+        #   checkpoint: "sam2.1_hiera_large.pt" #"sam2.1_hiera_small.pt
+        #   model_cfg: "configs/sam2.1/sam2.1_hiera_l.yaml" # "configs/sam2.1/sam2.1_hiera_s.yaml"
+
+    # ---------------------------------------------------------------------------
+    # 3d State estimation settings
+    # ---------------------------------------------------------------------------
+    state_estimation:
+      - name: "pca"
+        enabled: true
+        num_outlier_filtering: 1
+
+  # ---------------------------------------------------------------------------
+  # Aggregation/Fusion settings for multiple model outputs
+  # ---------------------------------------------------------------------------
+  aggregation:
+    enabled: false
+    # Example methods: "weighted_nms", "simple_merge", etc.
+    method: "weighted_nms"
+    iou_threshold: 0.5
+    confidence_method: "average"
+
+  # ---------------------------------------------------------------------------
+  # Output settings
+  # ---------------------------------------------------------------------------
+  output:
+    # Whether to save detection/tracking results (e.g., bounding boxes) to disk
+    save_results: false
+    save_path: "results/"
+
+
+communication:
+  # ---------------------------------------------------------------------------
+  # REST API server settings
+  # ---------------------------------------------------------------------------
+  api_server:
+    enabled: false
+    host: "0.0.0.0"
+    port: 8000
+
+  # ---------------------------------------------------------------------------
+  # Redis settings (pub/sub)
+  # ---------------------------------------------------------------------------
+  redis:
+    enabled: true
+    host: "127.0.0.1"
+    port: 6379
+    channels:
+      cameras:
+        front:
+            rgb: "front_rgb"
+            depth: "front_depth"
+            point_cloud: "front_point_cloud"
+        # top:
+        #     rgb: "top_rgb"
+        #     depth: "top_depth"
+        #     point_cloud: "top_point_cloud"
+
+      acknowledgement: "perception_ak"
+      info: "guidance_info"
+      locate: "locate" # locate the object in the image
+      remove: "remove" # remove the object from tracking list
+      reset: "reset" # reset the perception pipeline
+
+    # topics:
+    #   code_generation: "start_autogen"
+    #   img:  "front_rgb"
+    #   redis_img:  "front_rgb"
+    #   redis_pc: "front_point_cloud"
+    #   redis_ak: "perception_ak"
+    #   redis_guidance_info: "guidance_info"
+
+  # ---------------------------------------------------------------------------
+  # ROS settings
+  # ---------------------------------------------------------------------------
+  ros:
+    enabled: false
+    node_name: "open_vocab_node"
+  
+  gui:
+    enabled: true
+    camera_source: "redis" #"realsense" #"webcam" #"realsense" #"webcam" #, "realsense", "redis"
+    realsense_cam_serial: '821212062747' # NOTE: Obtained from RealSense software
+    3d_viewer:
+      enabled: false
+      limits:
+        x_min: -2
+        x_max: 2
+        y_min: -2
+        y_max: 2
+        z_min: -2
+        z_max: 2
+      update_every_n_frames: 10
+      show_origin: true
+      pointcloud_resolution: 5 # show every nth point in the point cloud
+  
+
+    
+
+# ---------------------------------------------------------------------------
+# Logging settings
+# ---------------------------------------------------------------------------
+logging:
+  level: "ERROR"
+  handlers:
+    console:
+      level: "ERROR"
+      formatter: "detailed"
+    file:
+      level: "ERROR"
+      formatter: "detailed"
+      filename: "app.log"
+  formatters:
+    detailed:
+      format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
