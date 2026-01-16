@@ -507,15 +507,15 @@ class GUIInterface(BaseInterface):
                 
                 folder_path = askdirectory(initialdir=self.output_dir)  # show an "Open" dialog box and return the path to the selected file
                 if folder_path:
-                    
-
+                    folder_path = os.path.join(folder_path, f"capture_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+                    os.makedirs(folder_path, exist_ok=True)
                     self.logger.info(f"[GUIInterface] Selected folder: {folder_path}")
                     # save the elements
                     elements_file = os.path.join(folder_path, "elements.pkl")
                     with open(elements_file, 'wb') as f:
                         pickle.dump([el.to_dict() for el in detections], f, protocol=pickle.HIGHEST_PROTOCOL)
                         # pickle.dump(detections, f, protocol=pickle.HIGHEST_PROTOCOL)
-                    # save the mask as a pkl file
+                    # save the mask as a pickle file
                     mask_file = os.path.join(folder_path, "mask.pkl")
                     with open(mask_file, 'wb') as f:
                         pickle.dump(mask, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -524,34 +524,11 @@ class GUIInterface(BaseInterface):
                     mask_npy_file = os.path.join(folder_path, "mask.npy")
                     np.save(mask_npy_file, mask)
                     
-                    # save mask as a black and white png
+                    # save mask as a black and white png (overwrite if exists)
                     mask_png = mask.astype(np.uint8)
                     mask_png_file = os.path.join(folder_path, "mask.png")
                     cv2.imwrite(mask_png_file, mask_png)
                     self.logger.info(f"[GUIInterface] Saved elements to {elements_file}")
-
-        # elif key == ord('['):
-        #     # open a navigation window to select a video
-            
-        #     Tk().withdraw()  # We don't want a full GUI, so keep the root window from appearing
-        #     video_sufixes =  ["mp4", "avi", "mov"]
-        #     images_sufixes = ["png", "jpg", "jpeg", "gif"]
-        #     video_path = askopenfilename(filetypes=[("Videos and Images files", "*."+" *.".join(video_sufixes+images_sufixes))])  # show an "Open" dialog box and return the path to the selected file
-        #     if video_path:
-        #         self.logger.info(f"[GUIInterface] Selected video file: {video_path}")
-        #         self._stop_camera()
-        #         self.cap = cv2.VideoCapture(video_path)
-        #         with self.lock:
-        #             self.frame = None
-        #             self.frame_index = 0
-        #             if video_path.endswith(tuple(video_sufixes)):
-        #                 self.camera_source = 'video'
-        #             elif video_path.endswith(tuple(images_sufixes)):
-        #                 self.camera_source = 'image'
-        #             else:
-        #                 raise ValueError(f"Unsupported file format: {video_path}")
-        #             # self.objects_to_remove.extend(self.tracked_objects)
-        #         self._trigger_reset()
 
         elif key == ord('\\'):
             self.logger.info("[GUIInterface] Deleting all objects.")
