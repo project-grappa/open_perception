@@ -873,7 +873,7 @@ if __name__ == "__main__":
 
     # test if image is encoded correctly for the llm by loading a known image and querying the model for a description
     test_image = cv2.imread(
-        "/home/arthur/Desktop/CMU/research/motorcortex/motor_cortex/motor_cortex/perception/open_vocab_perception_pipeline/tests/cat_and_dog.png"
+        "~/Desktop/CMU/research/motorcortex/motor_cortex/motor_cortex/perception/open_vocab_perception_pipeline/tests/cat_and_dog.png"
     )
     if test_image is None:
         raise ValueError("Test image not found. Please provide a valid image path.")

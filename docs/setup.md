@@ -8,7 +8,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ### Installation
 ```bash
-git clone --recurse-submodules https://github.com/arthurfenderbucker/open_perception.git
+git clone --recurse-submodules https://github.com/project-grappa/open_perception.git
 cd open_perception
 uv sync
 # Install third party models

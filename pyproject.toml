@@ -7,12 +7,12 @@ name = "open_perception"
 version = "0.1.0"
 description = "An open-vocabulary perception pipeline with multiple VLMs."
 authors = [
-    { name="Arthur Bucker", email="arthur.bucker@hotmail.com" }
+    { name="project grappa", email="" }
 ]
 license = { text = """
 MIT License
 
-Copyright (c) 2024 Arthur Fender Coelho Bucker
+Copyright (c) 2024
 """}
 readme = "README.md"
 requires-python = ">=3.8"

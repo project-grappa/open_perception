@@ -11,8 +11,8 @@ sys.path.insert(0, os.path.abspath('../../src'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Open Perception'
-copyright = '2025, Arthur F C Bucker'
-author = 'Arthur F C Bucker'
+copyright = '2025, project grappa'
+author = 'project grappa'
 release = '0.1.0'
 
 # -- General configuration ---------------------------------------------------

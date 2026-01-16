@@ -38,6 +38,6 @@ def crop_images(input_folder, output_folder):
                 print(f"Could not find main rectangle in {fname}")
 
 if __name__ == "__main__":
-    input_folder = "/home/arthur/Desktop/CMU/research/motorcortex/motor_cortex/motor_cortex/perception/open_vocab_perception_pipeline/docs/assets/detections/input"
-    output_folder = "/home/arthur/Desktop/CMU/research/motorcortex/motor_cortex/motor_cortex/perception/open_vocab_perception_pipeline/docs/assets/detections/output"
+    input_folder = "~/Desktop/CMU/research/motorcortex/motor_cortex/motor_cortex/perception/open_vocab_perception_pipeline/docs/assets/detections/input"
+    output_folder = "~/Desktop/CMU/research/motorcortex/motor_cortex/motor_cortex/perception/open_vocab_perception_pipeline/docs/assets/detections/output"
     crop_images(input_folder, output_folder)

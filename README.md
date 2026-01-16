@@ -59,7 +59,7 @@ Install [uv](https://docs.astral.sh/uv/) if you haven't already:
 
 ### Setup
    ```bash
-   git clone https://github.com/arthurfenderbucker/open_perception.git
+   git clone https://github.com/project-grappa/open_perception.git
    cd open_perception
    # Initialize uv project and sync dependencies
    uv sync
@@ -163,7 +163,7 @@ If you use this work is an extension of the GRAPPA perception pipeline, please c
 ```bibtex
 @misc{bucker2025grappa,
      title={GRAPPA: Generalizing and Adapting Robot Policies via Online Agentic Guidance},
-     author={Arthur Bucker and Pablo Ortega-Kral and Jonathan Francis and Jean Oh},
+     author={Author Names Omitted for Anonymous Review},
      year={2025},
      eprint={2410.06473},
      archivePrefix={arXiv},
