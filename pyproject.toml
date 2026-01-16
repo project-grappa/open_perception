@@ -15,7 +15,7 @@ MIT License
 Copyright (c) 2024
 """}
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10.0"
 keywords = ["computer-vision", "object-detection", "segmentation"]
 
 dependencies = [
@@ -24,7 +24,7 @@ dependencies = [
     "scipy",
     "redis",
     "jupyter>=1.0.0",
-    "tqdm",
+    "tqdm", 
     "pyyaml",
     "opencv-python>=4.5",
     "torch",
@@ -36,14 +36,13 @@ dependencies = [
     "litellm",
     "fpdf2",
     "tkinterdnd2",
-    #"sam-2 @ file:./third_party/segment-anything-2-real-time"
+    "sam-2 @ git+https://github.com/Gy920/segment-anything-2-real-time.git"
 ]
 
 [tool.uv.sources]
 torch = { index = "pytorch" }
 torchvision = { index = "pytorch" }
 torchaudio = { index = "pytorch" }
-sam-2 = { path = "./third_party/segment-anything-2-real-time", editable = true }
 
 [[tool.uv.index]]
 name = "pytorch"

@@ -63,22 +63,23 @@ Install [uv](https://docs.astral.sh/uv/) if you haven't already:
    cd open_perception
    # Initialize uv project and sync dependencies
    uv sync
-   # Install third party models
-   git submodule update --init --recursive
-   uv pip install -e ./third_party/segment-anything-2-real-time
    ```
 
-download the [pre-trained models](../checkpoints/README.md)
+download the checkpoints:
+```bash
+# If using SAM2 segmentation (Recommended)
+wget "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt" -O ./checkpoints/sam2.1_hiera_large.pt
+
+# wget "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_tiny.pt" -O ./checkpoints/sam2.1_hiera_tiny.pt
+# wget "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_small.pt" -O ./checkpoints/sam2.1_hiera_small.pt
+# wget "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_base_plus.pt" -O ./checkpoints/sam2.1_hiera_base_plus.pt
+```
 
 
 **(Optional) Install Additional Model Requirements**:  
  - For using a realsense camera input run: `uv sync --extra realsense`
  - For installing yoloworld dependencies run: `uv sync --extra yoloworld`
  - For installing all dependencies for all supported models run: `uv sync --extra all` 
-<!-- 4. **(Optional) ROS Setup**:
-   TODO
-   - If using ROS, make sure to source your ROS setup files (e.g., `source /opt/ros/noetic/setup.bash`) and 
-   install `ros_interface` Python dependencies. -->
 
 ---
 
@@ -157,21 +158,5 @@ This project is licensed under the [MIT License](LICENSE). Feel free to use, mod
 
 ---
 
-## Cite this work
-If you use this work is an extension of the GRAPPA perception pipeline, please cite the following paper:
-
-```bibtex
-@misc{bucker2025grappa,
-     title={GRAPPA: Generalizing and Adapting Robot Policies via Online Agentic Guidance},
-     author={Author Names Omitted for Anonymous Review},
-     year={2025},
-     eprint={2410.06473},
-     archivePrefix={arXiv},
-     primaryClass={cs.RO},
-     url={https://arxiv.org/abs/2410.06473},
-}
-```
-
----
 
 **Thank you for using open_perception!** If you have any questions or suggestions, please open an issue or reach out via the repository’s discussions. We look forward to your feedback and contributions.
