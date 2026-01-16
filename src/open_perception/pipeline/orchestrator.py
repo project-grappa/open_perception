@@ -153,8 +153,7 @@ class Orchestrator:
                 )
 
                 detection_model = VLMDetectionWithSearch(
-                    vlm_search_config=vlm_search_config,
-                    model_config=m,
+                    vlm_config=vlm_search_config,
                     detection_model=detection_model,
                 )
 
@@ -299,8 +298,8 @@ class Orchestrator:
             target=self.perception_loop, daemon=True
         )
         self.perception_thread.start()
-        if "gui" in self.comm_modules and self.comm_modules["gui"].is_enabled():
-            self.comm_modules["gui"].run()
+        # if "gui" in self.comm_modules and self.comm_modules["gui"].is_enabled():
+        #     self.comm_modules["gui"].run()
 
         self.perception_thread.join()
 
@@ -635,7 +634,6 @@ class Orchestrator:
                 element.meta["segmentation_time"] = (
                     end_time - start_time
                 ).total_seconds()
-                break
 
         return elements
 

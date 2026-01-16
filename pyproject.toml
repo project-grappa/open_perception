@@ -33,6 +33,9 @@ dependencies = [
     "moviepy",
     "easydict",
     "datasets",
+    "litellm",
+    "fpdf2",
+    "tkinterdnd2",
     #"sam-2 @ file:./third_party/segment-anything-2-real-time"
 ]
 
@@ -40,13 +43,13 @@ dependencies = [
 torch = { index = "pytorch" }
 torchvision = { index = "pytorch" }
 torchaudio = { index = "pytorch" }
+sam-2 = { path = "./third_party/segment-anything-2-real-time", editable = true }
 
 [[tool.uv.index]]
 name = "pytorch"
 url = "https://download.pytorch.org/whl/cu124"
-
-[tool.pip]
-editable = ["./third_party/segment-anything-2-real-time"]
+explicit = true
+default = false
 
 [project.optional-dependencies]
 realsense = ["pyrealsense2"]

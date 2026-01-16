@@ -13,10 +13,14 @@ libGL error: failed to load driver: iris
 libGL error: MESA-LOADER: failed to open swrast: /usr/lib/dri/swrast_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
 libGL error: failed to load driver: swrast
 ```
-### soultion:
+### Solution:
+<!-- 
+Install the required library:
 
-`conda install -c conda-forge libstdcxx-ng`
+`conda install -c conda-forge libstdcxx-ng` -->
 
-or 
+or prepend: `LD_PRELOAD=/usr/lib64/libstdc++.so.6` to the command that you are running:
 
-prepend: `LD_PRELOAD=/usr/lib64/libstdc++.so.6` to the command that you are running.
+```bash
+LD_PRELOAD=/usr/lib64/libstdc++.so.6 uv run python src/main.py
+```

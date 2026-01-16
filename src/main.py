@@ -121,6 +121,7 @@ def main():
 
     # 6. Start communication services (e.g., run a server, subscribe to channels, etc.)
     #    Depending on how you implement communication modules, you might start them here.
+    #    Note: GUI is NOT started here - it runs in the main thread via orchestrator.run()
     for module_name, module in comm_modules.items():
         if hasattr(module, "start"):
             module.start()
@@ -131,16 +132,8 @@ def main():
     
     print("Pipeline started successfully.")
     
-    # def orchestrator_thread():
-    #     orchestrator.run()
     try:
         orchestrator.run()
-        # orchestrator_thread = threading.Thread(target=orchestrator_thread)
-        # orchestrator_thread.start()
-        # while orchestrator_thread.is_alive():
-        #     time.sleep(1)
-        #     print("Pipeline is running...")
-        # orchestrator.run()
     except KeyboardInterrupt:
         print("\nPipeline interrupted by user.")
     finally:

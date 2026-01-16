@@ -50,27 +50,31 @@ The integration of various communication backends (Redis, API, and ROS), makes t
 
 
 ## Installation
+
+### Prerequisites
+Install [uv](https://docs.astral.sh/uv/) if you haven't already:
    ```bash
-   conda create -n open_perception python=3.11.7
-   conda activate open_perception
+   curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
+### Setup
    ```bash
    git clone https://github.com/arthurfenderbucker/open_perception.git
    cd open_perception
-   pip install -e .
-   # third party models
+   # Initialize uv project and sync dependencies
+   uv sync
+   # Install third party models
    git submodule update --init --recursive
-   pip install -e ./third_party/segment-anything-2-real-time
+   uv pip install -e ./third_party/segment-anything-2-real-time
    ```
 
 download the [pre-trained models](../checkpoints/README.md)
 
 
 **(Optional) Install Additional Model Requirements**:  
- - For using a realsense camera input run: `pip install -e .[realsense]`
- - For insatlling yoloworld dependencies run: `pip install -e .[yoloworld]`
- - For installing all dependencies for all supported models run: `pip install -e .[all]` 
+ - For using a realsense camera input run: `uv sync --extra realsense`
+ - For installing yoloworld dependencies run: `uv sync --extra yoloworld`
+ - For installing all dependencies for all supported models run: `uv sync --extra all` 
 <!-- 4. **(Optional) ROS Setup**:
    TODO
    - If using ROS, make sure to source your ROS setup files (e.g., `source /opt/ros/noetic/setup.bash`) and 
@@ -83,7 +87,7 @@ download the [pre-trained models](../checkpoints/README.md)
 Run the main pipeline with a default configuration:
 
 ```bash
-python src/main.py
+uv run python src/main.py
 ```
 
 This will start the perception pipeline with the default settings, using GroundingDino for detection, SAM2 for segmentation and PCA, a GUI interface for visualization and PCA for 3D state estimation
@@ -97,7 +101,7 @@ You can customize the pipeline by specifying a different configuration file or c
 To run the test suite:
 
 ```bash
-pytest tests/
+uv run pytest tests/
 ```
 
 This will execute:

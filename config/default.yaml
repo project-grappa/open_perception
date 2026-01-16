@@ -43,8 +43,8 @@ pipeline:
 
         - name: "GroundingDINO"
           enabled: true
-          multi_granular: true
-          vlm_search: true
+          multi_granular: false
+          vlm_search: false
 
           # checkpoint: "checkpoints/dino.pt"
           box_threshold: 0.35
@@ -60,7 +60,7 @@ pipeline:
           enabled: true
           checkpoint: "sam2.1_hiera_large.pt" #"sam2.1_hiera_small.pt
           model_cfg: "configs/sam2.1/sam2.1_hiera_l.yaml" # "configs/sam2.1/sam2.1_hiera_s.yaml"
-          confidence_threshold: 0.5
+          confidence_threshold: 0.3
 
     # ---------------------------------------------------------------------------
     # 3d State estimation settings
@@ -103,7 +103,7 @@ communication:
   # Redis settings (pub/sub)
   # ---------------------------------------------------------------------------
   redis:
-    enabled: true
+    enabled: false
     host: "127.0.0.1"
     port: 6379
     channels:
@@ -159,7 +159,7 @@ communication:
 # Logging settings
 # ---------------------------------------------------------------------------
 logging:
-  level: "INFO"
+  level: "ERROR"
   handlers:
     console:
       level: "INFO"

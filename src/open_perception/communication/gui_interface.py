@@ -15,6 +15,7 @@ import open3d
 from open_perception.logging.base_logger import Logger
 from open_perception.utils.common import combine_images
 from datetime import datetime
+from open_perception.communication.drag_drop_loader import DragDropImageLoader
 
 
 class GUIInterface(BaseInterface):
@@ -55,7 +56,7 @@ class GUIInterface(BaseInterface):
         self.user_input = ''
 
         # Open3D visualization
-        config_3d_viewer = config.get("3d_viewer")
+        config_3d_viewer = config.get("3d_viewer", {})
         self.show_3d_viewer = config_3d_viewer.get("enabled", True)
         pc_limits_dict = config_3d_viewer.get("limits", {})
         self.pc_limits = np.array([
@@ -78,6 +79,9 @@ class GUIInterface(BaseInterface):
         os.makedirs(self.recording_dir, exist_ok=True)
         self.rgb_writer = None
         self.pc_writer = None
+
+        # Initialize drag-and-drop loader
+        self.drag_drop_loader = DragDropImageLoader(on_image_loaded=self._on_drag_drop_image_loaded)
 
     def _parse_models_config(self, model_config):
         self.thresholds = {}
@@ -120,14 +124,27 @@ class GUIInterface(BaseInterface):
                 self._setup_realsense()
             self.use_realsense = True
         elif self.camera_source == 'webcam':
-            self.cap = cv2.VideoCapture(-1)
+            self.cap = cv2.VideoCapture(0)
+            if not self.cap.isOpened():
+                self.logger.error("[GUIInterface] Failed to open webcam!")
+                self.cap = None
+            else:
+                # Give camera time to warm up
+                import time
+                time.sleep(0.5)
+                # Try reading a few frames to ensure camera is ready
+                for _ in range(5):
+                    ret, _ = self.cap.read()
+                    if ret:
+                        break
+                self.logger.info("[GUIInterface] Webcam opened successfully")
         elif self.camera_source == 'redis':
             pass
 
     def _stop_camera(self):
         if self.use_realsense and self.realsense_cam is not None:
             self.realsense_cam.shutdown()
-        else:
+        elif hasattr(self, 'cap') and self.cap is not None:
             self.cap.release()
 
     def _change_source(self, source):
@@ -168,9 +185,14 @@ class GUIInterface(BaseInterface):
             pc = pc.reshape(H, W, 3)
 
         elif self.camera_source == 'webcam':
+            if self.cap is None or not self.cap.isOpened():
+                self.logger.warning("[GUIInterface] Webcam not available")
+                return None
             ret, frame = self.cap.read()
             if not ret:
+                self.logger.warning("[GUIInterface] Failed to read frame from webcam")
                 return None
+            self.logger.debug(f"[GUIInterface] Captured frame: {frame.shape if frame is not None else 'None'}")
         elif self.camera_source == 'redis':
             frame = self.frame_new # updated externally in the update method
             pc = self.point_cloud_new
@@ -237,7 +259,8 @@ class GUIInterface(BaseInterface):
         self.input_box = input_box
 
     def run(self):
-        cv2.namedWindow("Camera Feed")
+        cv2.namedWindow("Camera Feed", cv2.WINDOW_NORMAL)
+        cv2.waitKey(1)  # Allow window to initialize
 
         # create trackbars for the thresholds
         for k,v  in self.thresholds.items():
@@ -270,18 +293,25 @@ class GUIInterface(BaseInterface):
             key = cv2.waitKey(1) & 0xFF
             self._handle_keyboard_inputs(key)
 
+            # Update drag-and-drop loader if active
+            if self.drag_drop_loader.active:
+                self.drag_drop_loader.update()
         
             with self.lock:
                 detections = self.detections
 
+            cv2_window_width = cv2.getWindowImageRect("Camera Feed")[2]*2
+            target_width = min(frame_annotated.shape[1], cv2_window_width)
+            target_height = frame_annotated.shape[0] * target_width // frame_annotated.shape[1]
+
             # update interface in case frame width has changed
-            if hasattr(self, 'input_box') and frame_annotated.shape[1] != self.input_box.shape[1]:
+            if hasattr(self, 'input_box') and target_width != self.input_box.shape[1]:
                 self.new_info = True
             # update the gui interface
             if self.new_info:
-                self._draw_input_box(detections, width=frame_annotated.shape[1])
+                self._draw_input_box(detections, width=target_width)
                 self.new_info = False
-                print("updated")
+                print(f"input: {self.user_input}")
             
             # self._update_3d_viewer()
             if self.show_3d_viewer and self.frame_index % self.update_every_n_frames == 0:
@@ -294,15 +324,16 @@ class GUIInterface(BaseInterface):
             frame_annotated = draw_elements_detections(frame_annotated, detections)
             frame_annotated = draw_segmentations(frame_annotated, detections)
 
+            reshaped_frame_annotated = cv2.resize(frame_annotated, (target_width, target_height))
             # Combine the frame with the input box
-            combined_frame = np.vstack((frame_annotated, self.input_box))
+            combined_frame = np.vstack((reshaped_frame_annotated, self.input_box))
 
             # resize frame if it is too large
             if combined_frame.shape[0] > self.max_height:
                 scale = self.max_height/combined_frame.shape[0]
                 combined_frame = cv2.resize(combined_frame, (0,0), fx=scale, fy=scale)
 
-            cv2.imshow("Camera Feed", combined_frame)
+            cv2.imshow("Camera Feed", combined_frame.copy())
 
             with self.lock:
                 point_cloud = self.point_cloud
@@ -476,6 +507,8 @@ class GUIInterface(BaseInterface):
                 
                 folder_path = askdirectory(initialdir=self.output_dir)  # show an "Open" dialog box and return the path to the selected file
                 if folder_path:
+                    
+
                     self.logger.info(f"[GUIInterface] Selected folder: {folder_path}")
                     # save the elements
                     elements_file = os.path.join(folder_path, "elements.pkl")
@@ -487,30 +520,38 @@ class GUIInterface(BaseInterface):
                     with open(mask_file, 'wb') as f:
                         pickle.dump(mask, f, protocol=pickle.HIGHEST_PROTOCOL)
 
+                    #save mask as .npy
+                    mask_npy_file = os.path.join(folder_path, "mask.npy")
+                    np.save(mask_npy_file, mask)
+                    
+                    # save mask as a black and white png
+                    mask_png = mask.astype(np.uint8)
+                    mask_png_file = os.path.join(folder_path, "mask.png")
+                    cv2.imwrite(mask_png_file, mask_png)
                     self.logger.info(f"[GUIInterface] Saved elements to {elements_file}")
 
-        elif key == ord('['):
-            # open a navigation window to select a video
+        # elif key == ord('['):
+        #     # open a navigation window to select a video
             
-            Tk().withdraw()  # We don't want a full GUI, so keep the root window from appearing
-            video_sufixes =  ["mp4", "avi", "mov"]
-            images_sufixes = ["png", "jpg", "jpeg", "gif"]
-            video_path = askopenfilename(filetypes=[("Videos and Images files", "*."+" *.".join(video_sufixes+images_sufixes))])  # show an "Open" dialog box and return the path to the selected file
-            if video_path:
-                self.logger.info(f"[GUIInterface] Selected video file: {video_path}")
-                self._stop_camera()
-                self.cap = cv2.VideoCapture(video_path)
-                with self.lock:
-                    self.frame = None
-                    self.frame_index = 0
-                    if video_path.endswith(tuple(video_sufixes)):
-                        self.camera_source = 'video'
-                    elif video_path.endswith(tuple(images_sufixes)):
-                        self.camera_source = 'image'
-                    else:
-                        raise ValueError(f"Unsupported file format: {video_path}")
-                    # self.objects_to_remove.extend(self.tracked_objects)
-                self._trigger_reset()
+        #     Tk().withdraw()  # We don't want a full GUI, so keep the root window from appearing
+        #     video_sufixes =  ["mp4", "avi", "mov"]
+        #     images_sufixes = ["png", "jpg", "jpeg", "gif"]
+        #     video_path = askopenfilename(filetypes=[("Videos and Images files", "*."+" *.".join(video_sufixes+images_sufixes))])  # show an "Open" dialog box and return the path to the selected file
+        #     if video_path:
+        #         self.logger.info(f"[GUIInterface] Selected video file: {video_path}")
+        #         self._stop_camera()
+        #         self.cap = cv2.VideoCapture(video_path)
+        #         with self.lock:
+        #             self.frame = None
+        #             self.frame_index = 0
+        #             if video_path.endswith(tuple(video_sufixes)):
+        #                 self.camera_source = 'video'
+        #             elif video_path.endswith(tuple(images_sufixes)):
+        #                 self.camera_source = 'image'
+        #             else:
+        #                 raise ValueError(f"Unsupported file format: {video_path}")
+        #             # self.objects_to_remove.extend(self.tracked_objects)
+        #         self._trigger_reset()
 
         elif key == ord('\\'):
             self.logger.info("[GUIInterface] Deleting all objects.")
@@ -543,6 +584,10 @@ class GUIInterface(BaseInterface):
             else:
                 self._stop_recording()
                 self.recording = False
+        elif key == ord('['):  # Toggle drag-and-drop window
+            self.drag_drop_loader.toggle()
+            status = "opened" if self.drag_drop_loader.active else "closed"
+            self.logger.info(f"[GUIInterface] Drag & drop window {status}.")
         elif key == 8:  # Backspace key
             self.user_input = self.user_input[:-1]
         elif (key >= ord("a") and key <= ord("z")) or \
@@ -569,7 +614,10 @@ class GUIInterface(BaseInterface):
     
     def start(self):
         """
-        Run the Tkinter mainloop in a background thread.
+        Start the GUI interface.
+        Note: The actual run() method should be called from the main thread
+        by the orchestrator for proper OpenCV GUI operation.
+        This method is kept for standalone execution compatibility.
         """
         self.gui_thread = threading.Thread(target=self.run, daemon=True)
         self.gui_thread.start()
@@ -686,13 +734,52 @@ class GUIInterface(BaseInterface):
         """
         Record the current frame and point cloud if recording is active.
         """
+    
         if self.recording and frame is not None:
             self.rgb_writer.write(frame)
             if point_cloud is not None:
                 pickle.dump(point_cloud, self.pc_writer, protocol=pickle.HIGHEST_PROTOCOL)
     
+    def _on_drag_drop_image_loaded(self, filepath: str, image: np.ndarray):
+        """
+        Callback when an image or video is loaded via drag-and-drop.
+        
+        Args:
+            filepath: Path to the loaded image or video
+            image: The loaded image as a numpy array, or None if it's a video
+        """
+        # Stop current camera source
+        self._stop_camera()
+        
+        if image is None:
+            # It's a video file
+            self.logger.info(f"[GUIInterface] Loaded video via drag-and-drop: {filepath}")
+            with self.lock:
+                self.cap = cv2.VideoCapture(filepath)
+                self.frame = None
+                self.frame_index = 0
+                self.camera_source = 'video'
+        else:
+            # It's an image file
+            self.logger.info(f"[GUIInterface] Loaded image via drag-and-drop: {filepath}")
+            # Set the loaded image as the current frame
+            with self.lock:
+                self.frame = image
+                self.frame_index = 0
+                self.camera_source = 'image'
+                # Create a dummy video capture that just returns this image
+                self.cap = type('obj', (object,), {
+                    'read': lambda *args: (True, image),
+                    'isOpened': lambda *args: True,
+                    'set': lambda *args: None,
+                    'release': lambda *args: None
+                })()
+        
+        # Reset detections for new file
+        self._trigger_reset()
+        
 if __name__ == "__main__":
-    gui = GUIInterface()
+    gui = GUIInterface({})
     gui.start()
     while gui.running:
         pass
