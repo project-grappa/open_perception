@@ -7,7 +7,7 @@ name = "open_perception"
 version = "0.1.0"
 description = "An open-vocabulary perception pipeline with multiple VLMs."
 authors = [
-    { name="project grappa", email="" }
+    { name="project grappa", email="grappa993@gmail.com" }
 ]
 license = { text = """
 MIT License
